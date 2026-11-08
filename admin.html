@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="en" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KIRIN Control</title><link rel="stylesheet" href="css/styles.css"></head>
+<body class="admin-body"><main class="admin-wrap">
+  <a class="brand admin-brand" href="index.html"><span class="brand-mark">K</span><span>KIRIN</span></a>
+  <section id="loginPanel" class="admin-panel"><h1>CONTROL</h1><input id="adminEmail" type="email" placeholder="Email"><input id="adminPassword" type="password" placeholder="Password"><button class="primary-btn" id="loginButton">SIGN IN</button><p id="adminMessage" class="form-message"></p></section>
+  <section id="managePanel" class="admin-panel" hidden><div class="panel-head"><h1>LIBRARY</h1><button class="quiet-btn" id="logoutButton">SIGN OUT</button></div>
+    <input id="seriesName" placeholder="Series title"><div class="upload-row"><input id="chapterTitle" placeholder="Chapter title"><input id="chapterNumber" type="number" min="0" step="1" placeholder="Number"></div>
+    <label class="file-drop">SELECT PAGE IMAGES<input id="pageFiles" type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple></label>
+    <button class="primary-btn" id="publishButton">PUBLISH CHAPTER</button><p id="uploadMessage" class="form-message"></p><div id="adminChapters" class="admin-chapters"></div>
+  </section>
+</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/config.js"></script><script src="js/admin.js"></script></body></html>
