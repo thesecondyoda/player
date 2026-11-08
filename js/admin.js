@@ -1,0 +1,12 @@
+(() => {
+ const $=s=>document.querySelector(s),db=window.kirinSupabase;
+ const login=$("#loginPanel"),manage=$("#managePanel"),msg=$("#adminMessage"),uploadMsg=$("#uploadMessage");
+ function say(el,t){el.textContent=t;}
+ async function session(){if(!db)return;const {data}=await db.auth.getSession();if(data.session){login.hidden=true;manage.hidden=false;loadChapters();}}
+ $("#loginButton").onclick=async()=>{if(!db){say(msg,"Configure Supabase first.");return;}const {error}=await db.auth.signInWithPassword({email:$("#adminEmail").value,password:$("#adminPassword").value});if(error){say(msg,error.message);return;}say(msg,"");session();};
+ $("#logoutButton").onclick=async()=>{await db?.auth.signOut();login.hidden=false;manage.hidden=true;};
+ async function loadChapters(){if(!db)return;const {data}=await db.from("chapters").select("id,title,chapter_number,published").order("chapter_number",{ascending:false});$("#adminChapters").innerHTML=(data||[]).map(c=>`<div class="admin-chapter">#${c.chapter_number} · ${esc(c.title)} · ${c.published?"LIVE":"DRAFT"}</div>`).join("");}
+ function esc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+ $("#publishButton").onclick=async()=>{if(!db){say(uploadMsg,"Configure Supabase first.");return;}const files=[...$("#pageFiles").files].sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));const title=$("#chapterTitle").value.trim(),number=Number($("#chapterNumber").value);if(!title||!Number.isFinite(number)||!files.length){say(uploadMsg,"Enter title, number and select images.");return;}say(uploadMsg,"UPLOADING…");const {data:ch,error}=await db.from("chapters").insert({title,chapter_number:number,page_count:files.length,published:false}).select().single();if(error){say(uploadMsg,error.message);return;}for(let i=0;i<files.length;i++){const f=files[i],path=`${ch.id}/${String(i+1).padStart(4,"0")}.${f.name.split(".").pop().toLowerCase()}`;const {error:upErr}=await db.storage.from("chapter-pages").upload(path,f,{contentType:f.type,upsert:false});if(upErr){say(uploadMsg,upErr.message);return;}const {error:pageErr}=await db.from("chapter_pages").insert({chapter_id:ch.id,page_number:i+1,storage_path:path});if(pageErr){say(uploadMsg,pageErr.message);return;}}const {error:pubErr}=await db.from("chapters").update({published:true}).eq("id",ch.id);say(uploadMsg,pubErr?pubErr.message:"PUBLISHED");loadChapters();};
+ session();
+})();
