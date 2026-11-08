@@ -1,12 +1,6 @@
-// Add your Supabase project values here after creating the project.
+/* Public browser configuration only. Never place the service-role key here. */
 window.KIRIN_CONFIG = {
-  supabaseUrl: "",
-  supabaseAnonKey: "",
-  // Set this to the exact series title you want displayed in the reader.
-  seriesTitle: "KIRIN",
-  // Signed image URL lifetime, in seconds.
-  signedUrlSeconds: 90
+  SUPABASE_URL: "https://YOUR_PROJECT.supabase.co",
+  SUPABASE_ANON_KEY: "YOUR_SUPABASE_ANON_KEY",
+  FUNCTIONS_BASE_URL: "https://YOUR_PROJECT.supabase.co/functions/v1"
 };
-window.kirinSupabase = (window.KIRIN_CONFIG.supabaseUrl && window.KIRIN_CONFIG.supabaseAnonKey && window.supabase)
-  ? window.supabase.createClient(window.KIRIN_CONFIG.supabaseUrl, window.KIRIN_CONFIG.supabaseAnonKey)
-  : null;
