@@ -1,27 +1,18 @@
 <!doctype html>
 <html lang="en" dir="rtl">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#080a10"><title>KIRIN</title>
-  <link rel="icon" href="assets/kirin-mark.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/styles.css">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080b14"><title>KIRIN — Library</title>
+<link rel="icon" href="assets/kirin-mark.svg"><link rel="stylesheet" href="css/styles.css">
 </head>
-<body class="app-shell">
-  <header class="topbar">
-    <a class="brand" href="index.html" aria-label="KIRIN"><span class="brand-mark">K</span><span>KIRIN</span></a>
-    <div class="top-actions">
-      <button class="icon-btn" id="themeToggle" aria-label="Toggle theme" title="Theme">◐</button>
-      <button class="icon-btn" id="langToggle" aria-label="Change language" title="Language">文</button>
-    </div>
-  </header>
-  <main class="library-wrap">
-    <section class="library-head">
-      <div class="library-title"><span class="eyebrow" data-i18n="library">LIBRARY</span><h1 id="seriesTitle">KIRIN</h1></div>
-      <label class="search-box"><span>⌕</span><input id="chapterSearch" type="search" data-i18n-placeholder="search" placeholder="Search chapters" autocomplete="off"></label>
-    </section>
-    <section id="chapterGrid" class="chapter-grid" aria-live="polite"></section>
-    <div id="emptyState" class="empty-state" hidden>—</div>
-  </main>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js"></script><script src="js/app.js"></script>
+<body>
+<header class="topbar"><a class="brand" href="index.html"><span class="brand-mark">K</span><span>KIRIN</span></a>
+<nav class="top-actions"><a class="nav-link" href="index.html" data-i18n="library">LIBRARY</a><button class="icon-btn" id="themeToggle" aria-label="Theme">◐</button><button class="icon-btn" id="langToggle" aria-label="Language">文</button></nav></header>
+<main class="page-wrap">
+<section class="library-head"><div><p class="eyebrow" id="libraryEyebrow">KIRIN / LIBRARY</p><h1 id="siteTitle">LIBRARY</h1><p class="muted" id="siteSubtitle"></p></div>
+<label class="search-box"><span>⌕</span><input id="workSearch" type="search" placeholder="Search titles..." autocomplete="off"></label></section>
+<div class="filter-row"><div id="genreFilters" class="chips"></div><select id="sortWorks" class="select-control"><option value="updated">Recently updated</option><option value="title">Title A–Z</option><option value="year">Release year</option></select></div>
+<section id="workGrid" class="work-grid" aria-live="polite"></section><div id="emptyState" class="empty-state" hidden>NO WORKS PUBLISHED YET</div>
+</main><footer class="site-footer"><span>KIRIN</span><span id="footerText">READING ARCHIVE</span></footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/config.js"></script><script src="js/shared.js"></script><script src="js/public.js"></script>
 </body></html>

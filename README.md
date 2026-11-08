@@ -1,36 +1,41 @@
-# KIRIN Reader
+# KIRIN CMS v2
 
-A minimal, read-only manga reader shell. The public interface is intentionally limited to a chapter library and reader. No promotional copy, descriptions, comments, social feed, or download controls are included.
+A static visitor website plus a private single/multi-admin CMS powered by Supabase.
 
-## Included
-- Chapter library, search, chapter reader
-- Scroll and single-page modes
-- RTL-ready layout, language toggle (EN / AR / JA)
-- Dark/light toggle
-- Local reading position
-- Minimal single-admin control page for chapter uploads
-- Supabase SQL migration and Edge Function for private image storage + short-lived signed URLs
+## Visitor website
+- `index.html`: published works library, search, genre filters, sorting.
+- `work.html`: work information and published chapter list.
+- `reader.html`: vertical-scroll and single-page reader, previous/next chapter, fullscreen, local reading position.
 
-## Important security limitation
-A browser must receive image bytes to display them. A normal website cannot guarantee prevention of screenshots, screen recording, browser developer tools, or photographing the screen. This project adds deterrents (no download UI, context-menu/drag/copy suppression, short-lived signed URLs, private storage, no public page-path table access). It is not DRM and cannot provide absolute anti-capture protection.
+## Admin control center
+Open `/admin.html` after deployment.
+- Overview and publishing counts
+- Create/edit/delete works, metadata, genres, cover images and draft/published state
+- Create/edit/delete chapters, multi-image page upload, page ordering, publish/unpublish
+- Customize site name, subtitle, accent/background/text colors, logo text, footer
+- Configure default language, reader mode and progress setting
 
-## Setup
-1. Create a Supabase project.
-2. In Authentication, create the one administrator account. Disable public sign-ups.
-3. Run `supabase/migrations/001_kirin.sql` in the SQL Editor.
-4. Copy the administrator's Auth user UUID and insert it:
+## Deployment and database
+1. Back up your existing Supabase project.
+2. Use your existing KIRIN Supabase project (or create a new one).
+3. In SQL Editor run `supabase/migrations/002_kirin_cms.sql`. It upgrades the original starter schema, preserves old chapters, and places them in a published `Legacy Library` work.
+4. Create the administrator user in Supabase Authentication. Disable public signups.
+5. Copy that user's UUID and run:
    `insert into public.kirin_admins(user_id) values ('YOUR-AUTH-USER-UUID');`
-5. Set the function secrets:
-   `supabase secrets set SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=...`
-6. Deploy:
+6. In `js/config.js`, set only the Supabase Project URL and anon/public key.
+7. Set Edge Function secrets:
+   `supabase secrets set SUPABASE_URL=https://YOUR_PROJECT.supabase.co SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY`
+8. Deploy the Edge Function:
    `supabase functions deploy chapter-pages`
-7. Fill `js/config.js` with the project URL and anon key.
-8. Host the folder on HTTPS static hosting.
+9. Upload the full contents of this folder to Cloudflare Pages (not the parent folder). Keep the folder structure.
+10. Visit `/admin.html`, sign in, create a work, add a chapter and upload pages.
 
-## Operational notes
-- Keep the Storage bucket `chapter-pages` private.
-- Never put the service-role key in `js/config.js` or any browser asset.
-- Disable Supabase email/password signups after creating the administrator.
-- Uploading a chapter creates it as unpublished, uploads the pages, then publishes it.
-- The admin uploader is a simple starter. For production, add upload rollback, rate limits, image validation/re-encoding, audit logs, and server-side admin checks to every mutation.
-- The browser may cache rendered images despite short signed URL expiry. For stronger confidentiality, use a native app / DRM-capable delivery stack; even then screenshots cannot be fully prevented on every device.
+## Migration note
+The migration is designed for the original KIRIN starter schema: it adds the CMS fields to the existing `chapters` table and preserves its existing chapter/page rows. Existing chapters are attached to a new published work named `Legacy Library`. If you manually changed the original schema, review the SQL against your changes and back up first.
+
+## Security notes
+- Never expose the Supabase service-role key in `js/config.js`, HTML, or browser code.
+- The chapter image bucket is private. The Edge Function issues signed image URLs for published chapters only.
+- Covers are public images so the visitor catalog can display them. Do not upload private or sensitive images as covers.
+- A browser must receive image bytes to display them. Websites cannot guarantee blocking screenshots, screen recordings, developer tools, or photographing the display. This project removes obvious download UI and blocks context-menu/drag on reader images as deterrents, not as DRM.
+- For a production service, add image re-encoding/validation, upload rollback, audit logs, rate limiting, and robust pagination. Test with a staging Supabase project before replacing a live deployment.

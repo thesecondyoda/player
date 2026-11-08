@@ -1,34 +1,6 @@
 <!doctype html>
-<html lang="en" dir="rtl">
-<head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-  <meta name="theme-color" content="#080a10"><title>KIRIN Reader</title>
-  <link rel="stylesheet" href="css/styles.css">
-</head>
-<body class="reader-body">
-  <header class="reader-bar" id="readerBar">
-    <a class="reader-back" href="index.html" aria-label="Back to chapters">‹</a>
-    <div class="reader-chapter"><span id="chapterSeries">KIRIN</span><strong id="chapterName">—</strong></div>
-    <div class="reader-tools">
-      <button class="icon-btn" id="layoutToggle" title="Reading layout" aria-label="Reading layout">▤</button>
-      <button class="icon-btn" id="fitToggle" title="Fit mode" aria-label="Fit mode">⤢</button>
-      <button class="icon-btn" id="fullscreenToggle" title="Fullscreen" aria-label="Fullscreen">⛶</button>
-      <button class="icon-btn" id="hideBarToggle" title="Hide controls" aria-label="Hide controls">⌃</button>
-    </div>
-  </header>
-  <main id="readerStage" class="reader-stage" tabindex="0">
-    <div id="readerPages" class="reader-pages"></div>
-    <div id="readerLoading" class="reader-state">—</div>
-  </main>
-  <nav class="reader-footer" id="readerFooter">
-    <button class="reader-nav" id="prevPage">‹</button>
-    <span id="pageCounter">— / —</span>
-    <button class="reader-nav" id="nextPage">›</button>
-    <span class="footer-divider"></span>
-    <button class="reader-nav" id="prevChapter" aria-label="Previous chapter">«</button>
-    <button class="reader-nav" id="nextChapter" aria-label="Next chapter">»</button>
-  </nav>
-  <div class="watermark" aria-hidden="true">KIRIN</div>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js"></script><script src="js/reader.js"></script>
-</body></html>
+<html lang="en" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080b14"><title>KIRIN — Reader</title><link rel="icon" href="assets/kirin-mark.svg"><link rel="stylesheet" href="css/styles.css"></head>
+<body class="reader-body"><header class="reader-top"><a class="brand" href="index.html"><span class="brand-mark">K</span><span>KIRIN</span></a><div class="reader-title" id="readerTitle">Loading chapter...</div><div class="reader-tools"><button class="icon-btn" id="readerMode">SCROLL</button><button class="icon-btn" id="readerTheme">◐</button><button class="icon-btn" id="fullScreen">⛶</button></div></header>
+<div class="reader-nav"><a id="prevChapter" class="quiet-btn" href="#">← PREVIOUS</a><a id="backWork" class="quiet-btn" href="#">CHAPTER LIST</a><a id="nextChapter" class="quiet-btn" href="#">NEXT →</a></div>
+<main id="pages" class="reader-pages" aria-label="Manga pages"><div class="empty-state">LOADING PAGES</div></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/config.js"></script><script src="js/shared.js"></script><script src="js/reader.js"></script></body></html>
