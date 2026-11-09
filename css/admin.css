@@ -8,6 +8,7 @@ form:not(.grid){display:grid;gap:14px}.grid{display:grid;grid-template-columns:1
 .tabs{position:sticky;top:57px;z-index:20;display:flex;gap:6px;padding:10px 0;background:var(--bg);overflow-x:auto}
 .tab{flex:none;min-height:44px;padding:0 18px;font:600 15px "IBM Plex Sans Arabic",sans-serif;color:var(--soft);background:transparent;border:1px solid var(--line);border-radius:2px;cursor:pointer}.tab.on{color:#0a0614;background:var(--violet);border-color:var(--violet)}
 .admin .stats{margin:18px 0}.admin .stats div{padding:16px}
+.chk input{width:auto;min-height:0;margin-inline-end:8px;accent-color:var(--violet)}.chk span{color:var(--text)}
 .cover-prev{max-width:120px;border:1px solid var(--line)}
 .row{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}
 .row .n{font-weight:600;color:var(--violet)}.row .acts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}.row .btn{min-height:38px;padding:0 14px;font-size:14px}
