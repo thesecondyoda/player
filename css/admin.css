@@ -1,0 +1,17 @@
+.admin .wrap{padding-bottom:60px}.panel{margin:18px 0;padding:20px;background:var(--panel);border:1px solid var(--line)}.panel.narrow{max-width:420px;margin:48px auto}.panel.warn{border-color:var(--violet)}
+.panel h1,.panel h2{font-size:24px;margin-bottom:12px}
+label{display:grid;gap:6px;font-size:14px;color:var(--soft)}
+input,select,textarea{width:100%;min-height:44px;padding:8px 12px;font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:2px;outline:0}
+input:focus,select:focus,textarea:focus{border-color:var(--violet)}input[type=file]{padding:9px}
+form:not(.grid){display:grid;gap:14px}.grid{display:grid;grid-template-columns:1fr;gap:14px}.full{grid-column:1/-1}
+@media(min-width:700px){.grid{grid-template-columns:1fr 1fr}}
+.tabs{position:sticky;top:57px;z-index:20;display:flex;gap:6px;padding:10px 0;background:var(--bg);overflow-x:auto}
+.tab{flex:none;min-height:44px;padding:0 18px;font:600 15px "IBM Plex Sans Arabic",sans-serif;color:var(--soft);background:transparent;border:1px solid var(--line);border-radius:2px;cursor:pointer}.tab.on{color:#0a0614;background:var(--violet);border-color:var(--violet)}
+.admin .stats{margin:18px 0}.admin .stats div{padding:16px}
+.cover-prev{max-width:120px;border:1px solid var(--line)}
+.row{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}
+.row .n{font-weight:600;color:var(--violet)}.row .acts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}.row .btn{min-height:38px;padding:0 14px;font-size:14px}
+.badge{display:inline-block;margin-inline-start:8px;padding:0 8px;font-size:12px;border:1px solid var(--line);color:var(--soft)}.badge.on{color:var(--lilac);border-color:var(--violet)}
+.danger{color:#ff8fa3}
+.toast{position:fixed;inset:auto 16px 16px;z-index:50;max-width:480px;margin-inline:auto;padding:12px 16px;color:var(--text);background:var(--panel);border:1px solid var(--violet);box-shadow:0 0 24px var(--glow);transform:translateY(160%);transition:transform .25s}
+.toast.show{transform:none}.toast.bad{border-color:#ff5d7a}

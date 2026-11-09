@@ -1,6 +1,6 @@
 /* KIRIN — تقني: بنفسجي وأسود. موقع مانغا واحدة للقراءة. */
 :root{--bg:#07050d;--panel:#0f0a1c;--line:#2a1d4d;--text:#ece8fb;--soft:#9d93c4;--violet:#8b5cf6;--lilac:#c4b5fd;--glow:rgba(139,92,246,.38)}
-*{box-sizing:border-box}[hidden]{display:none!important}
+*{box-sizing:border-box}html,body{overflow-x:clip;max-width:100%}[hidden]{display:none!important}
 html{scroll-behavior:smooth;scroll-padding-top:70px}
 body{margin:0;position:relative;background:var(--bg);color:var(--text);font:400 16px/1.75 "IBM Plex Sans Arabic",Tahoma,sans-serif}
 body::before{content:"";position:absolute;inset:0 0 auto;height:640px;pointer-events:none;background:linear-gradient(var(--line) 1px,transparent 1px) 0 0/48px 48px,linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/48px 48px;opacity:.35;-webkit-mask-image:linear-gradient(#000,transparent);mask-image:linear-gradient(#000,transparent)}
@@ -24,7 +24,7 @@ h1,h2,h3{margin:0;font-family:"Reem Kufi","IBM Plex Sans Arabic",sans-serif;font
 .quiet-btn:disabled{opacity:.35;cursor:default;box-shadow:none}
 .wrap{position:relative;max-width:1040px;margin:0 auto;padding:0 18px}
 .hero{position:relative;display:grid;gap:28px;padding:44px 0 36px}
-.hero::before{content:"";position:absolute;inset:-60px -50vw 0;z-index:-1;background:var(--cover,none) center/cover;filter:blur(48px) saturate(1.3);opacity:.22;-webkit-mask-image:linear-gradient(#000,transparent);mask-image:linear-gradient(#000,transparent)}
+body::after{content:"";position:absolute;inset:0 0 auto;height:620px;z-index:-1;pointer-events:none;background:var(--cover,none) center/cover;filter:blur(50px) saturate(1.3);opacity:.2;-webkit-mask-image:linear-gradient(#000,transparent);mask-image:linear-gradient(#000,transparent)}
 .hud{position:relative;width:min(230px,62%);margin-inline:auto;aspect-ratio:2/3;background:var(--panel);box-shadow:0 0 60px var(--glow)}
 .hud img,.hud .ph{display:block;width:100%;height:100%;object-fit:cover}
 .ph{display:grid;place-items:center;font:700 64px "JetBrains Mono",monospace;color:var(--line)}
