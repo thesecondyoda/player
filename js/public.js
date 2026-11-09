@@ -5,7 +5,7 @@
     if ($('siteTitle')) $('siteTitle').textContent = settings.site_name || 'مكتبة كيرين';
     if ($('siteSubtitle')) $('siteSubtitle').textContent = settings.site_subtitle || 'اكتشف أعمالك واقرأ فصولك المفضلة.';
     if ($('footerText')) $('footerText').textContent = settings.footer_text || 'مكتبة قراءة المانغا';
-    if (location.pathname.endsWith('work.html')) await loadWork(); else await loadLibrary();
+    if ($('workHero')) await loadWork(); else await loadLibrary();
   } catch (err) { console.error(err); const target = $('emptyState') || $('chapterList'); if (target) { target.hidden = false; target.textContent = 'تعذر تحميل المحتوى. تحقق من الاتصال وحاول مجدداً.'; } }
   async function loadLibrary() {
     const { data, error } = await db.from('works').select('*').eq('status','published').order('updated_at',{ascending:false});
