@@ -1,41 +1,98 @@
 (async () => {
-  const db=window.kirinClient, $=id=>document.getElementById(id), esc=window.escapeHTML;
-  const message=(id,text,ok=false)=>{const el=$(id);if(el){el.textContent=text;el.className='form-message'+(ok?' success':'');}};
-  if(!db){message('loginMessage','أدخل رابط مشروع Supabase ومفتاح anon في js/config.js.');return;}
-  let works=[],chapters=[],settings={};
-  try { const {data:{session}}=await db.auth.getSession(); if(session)await enterAdmin(); } catch(e){message('loginMessage','تعذر التحقق من جلسة الدخول. حدّث الصفحة وحاول مجدداً.');}
-  $('loginForm').addEventListener('submit',async e=>{e.preventDefault();message('loginMessage','جارٍ التحقق من بيانات الدخول...');const {error}=await db.auth.signInWithPassword({email:$('adminEmail').value.trim(),password:$('adminPassword').value});if(error){message('loginMessage',authError(error));return;}await enterAdmin();});
-  db.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){ $('adminContent').hidden=true; $('loginPanel').hidden=false; }});
-  $('logoutButton').onclick=async()=>{await db.auth.signOut();location.reload();};
-  document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab))); document.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.goto)));
-  function showTab(tab){document.querySelectorAll('.side-link[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));document.querySelectorAll('.admin-view').forEach(v=>v.classList.toggle('active',v.id===`tab-${tab}`));$('adminHeading').textContent=({overview:'نظرة عامة',works:'إدارة الأعمال',chapters:'إدارة الفصول',appearance:'تخصيص المظهر',settings:'الإعدادات'})[tab]||tab;}
-  async function enterAdmin(){const {data:{user},error}=await db.auth.getUser();if(error||!user){message('loginMessage','انتهت جلسة الدخول. أعد تسجيل الدخول.');return;}const {data:admin,error:ae}=await db.from('kirin_admins').select('user_id').eq('user_id',user.id).maybeSingle();if(ae||!admin){await db.auth.signOut();message('loginMessage','هذا الحساب غير مضاف إلى قائمة مسؤولي KIRIN.');return;}$('loginPanel').hidden=true;$('adminContent').hidden=false;$('adminIdentity').textContent=user.email||'مسؤول';await refreshAll();}
-  async function refreshAll(){await Promise.all([loadWorks(),loadChapters(),loadSettings()]);}
-  async function loadWorks(){const {data,error}=await db.from('works').select('*').order('updated_at',{ascending:false});if(error){message('workMessage',dbError(error));return;}works=data||[];renderWorks();fillWorkSelects();$('statWorks').textContent=works.filter(w=>w.status==='published').length;}
-  async function loadChapters(){const {data,error}=await db.from('chapters').select('*,works(title)').order('created_at',{ascending:false});if(error){message('chapterMessage',dbError(error));return;}chapters=data||[];renderChapters();$('statChapters').textContent=chapters.filter(c=>c.status==='published').length;$('statDrafts').textContent=chapters.filter(c=>c.status==='draft').length;}
-  function fillWorkSelects(){const opts=works.map(w=>`<option value="${esc(w.id)}">${esc(w.title)}</option>`).join('');$('chapterWork').innerHTML='<option value="">اختر العمل</option>'+opts;$('chapterFilter').innerHTML='<option value="">جميع الأعمال</option>'+opts;}
-  function renderWorks(){const q=($('adminWorkSearch').value||'').trim().toLocaleLowerCase('ar');const list=works.filter(w=>(w.title||'').toLocaleLowerCase('ar').includes(q));const html=list.map(w=>`<article class="manage-row"><div class="manage-main"><strong>${esc(w.title)}</strong><small>${esc(w.slug)} · ${esc(typeAr(w.work_type))}</small></div><span class="status ${w.status}">${w.status==='published'?'منشور':'مسودة'}</span><div class="row-actions"><button type="button" data-edit-work="${esc(w.id)}">تعديل</button><button type="button" data-delete-work="${esc(w.id)}" class="danger-text">حذف</button></div></article>`).join('')||'<p class="muted">لا توجد أعمال حتى الآن.</p>';$('manageWorks').innerHTML=html;$('recentWorks').innerHTML=html;document.querySelectorAll('[data-edit-work]').forEach(b=>b.onclick=()=>editWork(b.dataset.editWork));document.querySelectorAll('[data-delete-work]').forEach(b=>b.onclick=()=>deleteWork(b.dataset.deleteWork));}
-  $('adminWorkSearch').oninput=renderWorks; $('workTitle').oninput=()=>{if(!$('workId').value)$('workSlug').value=window.slugify($('workTitle').value);};
-  function editWork(id){const w=works.find(x=>x.id===id);if(!w)return;showTab('works');$('workId').value=w.id;$('workTitle').value=w.title||'';$('workSlug').value=w.slug||'';$('workAlt').value=w.alt_title||'';$('workAuthor').value=w.author||'';$('workArtist').value=w.artist||'';$('workYear').value=w.release_year||'';$('workType').value=w.work_type||'Manga';$('workStatus').value=w.status||'draft';$('workGenres').value=(w.genres||[]).join(', ');$('workDescription').value=w.description||'';$('workFormHeading').textContent='تعديل العمل';window.scrollTo({top:0,behavior:'smooth'});}
-  $('resetWorkForm').onclick=()=>{ $('workForm').reset();$('workId').value='';$('workFormHeading').textContent='إضافة عمل جديد';message('workMessage','');};
-  $('workForm').onsubmit=async e=>{e.preventDefault();message('workMessage','جارٍ حفظ العمل...');const id=$('workId').value;let cover=works.find(w=>w.id===id)?.cover_path||null;const file=$('workCover').files[0];if(file){if(!window.kirinImageValid(file)){message('workMessage','نوع الصورة غير مدعوم أو حجمها يتجاوز 15 ميغابايت.');return;}const path=`covers/${crypto.randomUUID()}.${ext(file)}`;const up=await db.storage.from('covers').upload(path,file,{upsert:false,contentType:file.type});if(up.error){message('workMessage',dbError(up.error));return;}cover=path;}
-    const row={title:$('workTitle').value.trim(),slug:$('workSlug').value.trim(),alt_title:$('workAlt').value.trim()||null,author:$('workAuthor').value.trim()||null,artist:$('workArtist').value.trim()||null,release_year:Number($('workYear').value)||null,work_type:$('workType').value,status:$('workStatus').value,genres:$('workGenres').value.split(',').map(x=>x.trim()).filter(Boolean),description:$('workDescription').value.trim(),cover_path:cover,updated_at:new Date().toISOString()};const result=id?await db.from('works').update(row).eq('id',id):await db.from('works').insert(row);if(result.error){message('workMessage',dbError(result.error));return;}message('workMessage','تم حفظ العمل بنجاح.',true);$('workForm').reset();$('workId').value='';$('workFormHeading').textContent='إضافة عمل جديد';await loadWorks();};
-  async function deleteWork(id){const w=works.find(x=>x.id===id);if(!w||!confirm(`حذف «${w.title}»؟ سيُحذف العمل وفصوله وسجلات الصفحات المرتبطة به.`))return;const chapterRows=await db.from('chapters').select('id').eq('work_id',id);if(chapterRows.error){alert(dbError(chapterRows.error));return;}const ids=(chapterRows.data||[]).map(x=>x.id);let paths=[];if(ids.length){const pageRows=await db.from('chapter_pages').select('storage_path').in('chapter_id',ids);if(pageRows.error){alert(dbError(pageRows.error));return;}paths=(pageRows.data||[]).map(x=>x.storage_path);}const {error}=await db.from('works').delete().eq('id',id);if(error){alert(dbError(error));return;}if(paths.length){const rm=await db.storage.from('chapter-pages').remove(paths);if(rm.error)alert('حُذف العمل، لكن تعذر تنظيف بعض صور الفصول من التخزين: '+dbError(rm.error));}await refreshAll();}
-  function renderChapters(){const filter=$('chapterFilter').value;const list=chapters.filter(c=>!filter||c.work_id===filter);$('manageChapters').innerHTML=list.map(c=>`<article class="manage-row"><div class="manage-main"><strong>${esc(c.works?.title||'عمل')} — الفصل ${esc(c.chapter_number)}</strong><small>${esc(c.title||'من دون عنوان')}</small></div><span class="status ${c.status}">${c.status==='published'?'منشور':'مسودة'}</span><div class="row-actions"><button type="button" data-edit-chapter="${esc(c.id)}">تعديل</button><button type="button" data-toggle-chapter="${esc(c.id)}">${c.status==='published'?'إلغاء النشر':'نشر'}</button><button type="button" data-delete-chapter="${esc(c.id)}" class="danger-text">حذف</button></div></article>`).join('')||'<p class="muted">لا توجد فصول.</p>';document.querySelectorAll('[data-edit-chapter]').forEach(b=>b.onclick=()=>editChapter(b.dataset.editChapter));document.querySelectorAll('[data-toggle-chapter]').forEach(b=>b.onclick=()=>toggleChapter(b.dataset.toggleChapter));document.querySelectorAll('[data-delete-chapter]').forEach(b=>b.onclick=()=>deleteChapter(b.dataset.deleteChapter));}
-  $('chapterFilter').onchange=renderChapters; $('chapterPages').onchange=()=>{$('selectedFiles').textContent=[...$('chapterPages').files].map(f=>f.name).join(' · ');};
-  $('resetChapterForm').onclick=()=>{$('chapterForm').reset();$('chapterId').value='';$('selectedFiles').textContent='';$('chapterFormHeading').textContent='إضافة فصل';message('chapterMessage','');};
-  function editChapter(id){const c=chapters.find(x=>x.id===id);if(!c)return;showTab('chapters');$('chapterId').value=c.id;$('chapterWork').value=c.work_id;$('chapterNumber').value=c.chapter_number;$('chapterTitle').value=c.title||'';$('chapterStatus').value=c.status;$('chapterFormHeading').textContent='تعديل الفصل';window.scrollTo({top:0,behavior:'smooth'});}
-  $('chapterForm').onsubmit=async e=>{e.preventDefault();message('chapterMessage','جارٍ حفظ الفصل...');const id=$('chapterId').value;const row={work_id:$('chapterWork').value,chapter_number:Number($('chapterNumber').value),title:$('chapterTitle').value.trim()||null,status:$('chapterStatus').value,published_at:$('chapterStatus').value==='published'?new Date().toISOString():null};let chapterId=id;const saved=id?await db.from('chapters').update(row).eq('id',id):await db.from('chapters').insert(row).select('id').single();if(saved.error){message('chapterMessage',dbError(saved.error));return;}if(!id)chapterId=saved.data.id;const chosen=[...$('chapterPages').files];if(chosen.length){if(chosen.some(f=>!window.kirinImageValid(f))){message('chapterMessage','توجد صورة بنوع غير مدعوم أو بحجم يتجاوز 15 ميغابايت. لم يبدأ الرفع.');return;}if($('pageOrder').value==='filename')chosen.sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));const old=await db.from('chapter_pages').select('page_number,storage_path').eq('chapter_id',chapterId);if(old.error){message('chapterMessage',dbError(old.error));return;}const uploaded=[],records=[];for(let i=0;i<chosen.length;i++){const f=chosen[i],path=`${chapterId}/${String(i+1).padStart(4,'0')}-${crypto.randomUUID()}.${ext(f)}`;const up=await db.storage.from('chapter-pages').upload(path,f,{upsert:false,contentType:f.type});if(up.error){await rollback(uploaded);message('chapterMessage',`فشل رفع ${f.name}: ${dbError(up.error)}. تم التراجع عن الملفات التي رُفعت في هذه المحاولة.`);return;}uploaded.push(path);records.push({chapter_id:chapterId,page_number:i+1,storage_path:path});}
-      const oldRows=old.data||[];if(oldRows.length){const delOld=await db.from('chapter_pages').delete().eq('chapter_id',chapterId);if(delOld.error){await rollback(uploaded);message('chapterMessage','تعذر تجهيز استبدال الصفحات القديمة: '+dbError(delOld.error));return;}}const ins=await db.from('chapter_pages').insert(records);if(ins.error){if(oldRows.length){const restore=await db.from('chapter_pages').insert(oldRows.map(x=>({chapter_id:chapterId,page_number:x.page_number,storage_path:x.storage_path})));if(restore.error)console.error('Page rollback restore failed:',restore.error);}await rollback(uploaded);message('chapterMessage',`تعذر حفظ ترتيب الصفحات: ${dbError(ins.error)}. أُعيدت سجلات الصفحات القديمة إن أمكن، وحُذفت الملفات الجديدة.`);return;}const countUpdate=await db.from('chapters').update({page_count:records.length}).eq('id',chapterId);if(countUpdate.error)console.warn('Page count update:',countUpdate.error.message);if(oldRows.length){const rm=await db.storage.from('chapter-pages').remove(oldRows.map(x=>x.storage_path));if(rm.error)console.warn('Old page cleanup:',rm.error.message);}}
-    message('chapterMessage','تم حفظ الفصل والصفحات بنجاح.',true);$('chapterForm').reset();$('chapterId').value='';$('selectedFiles').textContent='';$('chapterFormHeading').textContent='إضافة فصل';await loadChapters();};
-  async function rollback(paths){if(paths.length)await db.storage.from('chapter-pages').remove(paths);}
-  async function toggleChapter(id){const c=chapters.find(x=>x.id===id);if(!c)return;const status=c.status==='published'?'draft':'published';const {error}=await db.from('chapters').update({status,published_at:status==='published'?new Date().toISOString():null}).eq('id',id);if(error)alert(dbError(error));else await loadChapters();}
-  async function deleteChapter(id){if(!confirm('حذف الفصل وصوره نهائياً؟'))return;const {data:pages,error:pe}=await db.from('chapter_pages').select('storage_path').eq('chapter_id',id);if(pe){alert(dbError(pe));return;}const {error}=await db.from('chapters').delete().eq('id',id);if(error){alert(dbError(error));return;}if(pages?.length){const rm=await db.storage.from('chapter-pages').remove(pages.map(p=>p.storage_path));if(rm.error)alert('حُذف الفصل، لكن تعذر تنظيف بعض الصور من التخزين: '+dbError(rm.error));}await loadChapters();}
-  async function loadSettings(){const s=await window.kirinSettings();settings=s;$('settingName').value=s.site_name||'KIRIN';$('settingSubtitle').value=s.site_subtitle||'';$('settingAccent').value=s.accent_color||'#16b8ef';$('settingBackground').value=s.background_color||'#070b16';$('settingText').value=s.text_color||'#edf4ff';$('settingLogo').value=s.logo_text||'K';$('settingFooter').value=s.footer_text||'مكتبة قراءة المانغا';$('defaultReaderMode').value=s.default_reader_mode||'scroll';$('readingProgress').value=String(s.reading_progress!==false);}
-  async function saveSettings(values,target){const {error}=await db.from('site_settings').upsert({id:1,...values,updated_at:new Date().toISOString()});if(error)message(target,dbError(error));else{message(target,'تم حفظ الإعدادات.',true);settings=await window.kirinSettings();window.applyKirinTheme(settings);}}
-  $('appearanceForm').onsubmit=async e=>{e.preventDefault();let logo_path=settings.logo_path||null;const f=$('settingLogoFile').files[0];if(f){if(!['image/png','image/webp','image/svg+xml'].includes(f.type)||f.size>5*1024*1024){message('appearanceMessage','ملف الشعار غير صالح أو أكبر من 5 ميغابايت.');return;}const path=`branding/${crypto.randomUUID()}.${ext(f)}`;const up=await db.storage.from('covers').upload(path,f,{upsert:false,contentType:f.type});if(up.error){message('appearanceMessage',dbError(up.error));return;}logo_path=path;}await saveSettings({site_name:$('settingName').value.trim()||'KIRIN',site_subtitle:$('settingSubtitle').value.trim(),accent_color:$('settingAccent').value,background_color:$('settingBackground').value,text_color:$('settingText').value,logo_text:$('settingLogo').value.trim()||'K',footer_text:$('settingFooter').value.trim(),logo_path},'appearanceMessage');};
-  $('settingsForm').onsubmit=async e=>{e.preventDefault();await saveSettings({default_reader_mode:$('defaultReaderMode').value,reading_progress:$('readingProgress').value==='true'},'settingsMessage');};
-  function ext(f){return ({'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/avif':'avif','image/svg+xml':'svg'})[f.type]||'bin';}
-  function typeAr(v){return ({Manga:'مانغا',Manhwa:'مانهوا',Manhua:'مانها',Comic:'كوميك',Novel:'رواية'})[v]||v||'مانغا';}
-  function dbError(e){return e?.message||'حدث خطأ غير متوقع.';} function authError(e){return e?.message==='Invalid login credentials'?'البريد الإلكتروني أو كلمة المرور غير صحيحة.':dbError(e);}
+  const db = window.kirinClient, $ = id => document.getElementById(id), esc = window.escapeHTML;
+  const toast = (t, bad) => { const e = $('toast'); e.textContent = t; e.className = 'toast show' + (bad ? ' bad' : ''); clearTimeout(toast.t); toast.t = setTimeout(() => e.className = 'toast', 4500); };
+  const msg = e => { console.error(e); return (e && e.message) || 'خطأ غير معروف'; };
+  const vis = (id, on) => { $(id).hidden = !on; };
+  if (!db) { document.querySelector('main').innerHTML = '<p class="empty-state">اتصال Supabase غير مضبوط في js/config.js.</p>'; return; }
+  let W = null, chapters = [], editing = null;
+  const ext = f => (f.name.split('.').pop() || 'jpg').toLowerCase();
+  const genres = w => (w.genres || []).flatMap(g => String(g).split(/[،,]/)).map(s => s.trim()).filter(Boolean);
+
+  async function gate() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) { vis('login', 1); vis('app', 0); vis('logout', 0); return; }
+    const { data, error } = await db.from('kirin_admins').select('user_id').eq('user_id', user.id).maybeSingle();
+    if (error || !data) { vis('login', 1); vis('app', 0); $('loginMsg').textContent = error ? msg(error) : 'هذا الحساب غير مضاف إلى kirin_admins.'; vis('logout', 1); return; }
+    vis('login', 0); vis('app', 1); vis('logout', 1); await load();
+  }
+  $('loginForm').onsubmit = async e => { e.preventDefault(); $('loginMsg').textContent = '...'; const { error } = await db.auth.signInWithPassword({ email: $('email').value.trim(), password: $('password').value }); if (error) { $('loginMsg').textContent = 'تعذر الدخول: ' + error.message; return; } $('password').value = ''; await gate(); };
+  $('logout').onclick = async () => { await db.auth.signOut(); await gate(); };
+  const tab = t => { document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === t)); document.querySelectorAll('.view').forEach(v => v.hidden = v.id !== 'tab-' + t); window.scrollTo(0, 0); };
+  document.addEventListener('click', e => { const b = e.target.closest('[data-tab],[data-go]'); if (b) tab(b.dataset.tab || b.dataset.go); });
+
+  async function load() {
+    const r = await db.from('works').select('*').order('updated_at', { ascending: false }).limit(1).maybeSingle();
+    if (r.error) return toast(msg(r.error), 1);
+    W = r.data; const w = W || {};
+    $('wTitle').value = w.title || ''; $('wAlt').value = w.alt_title || ''; $('wSlug').value = w.slug || ''; $('wAuthor').value = w.author || ''; $('wArtist').value = w.artist || '';
+    $('wYear').value = w.release_year || ''; $('wType').value = w.work_type || 'Manga'; $('wStatus').value = w.status || 'published'; $('wGenres').value = genres(w).join('، '); $('wDesc').value = w.description || '';
+    const u = w.cover_path ? db.storage.from('covers').getPublicUrl(w.cover_path).data.publicUrl : ''; $('coverPrev').hidden = !u; if (u) $('coverPrev').src = u;
+    $('ovTitle').textContent = w.title || 'لا يوجد عمل'; await loadChapters();
+  }
+  $('workForm').onsubmit = async e => {
+    e.preventDefault(); const b = e.submitter; b.disabled = true;
+    try {
+      let cover = W ? W.cover_path : null; const f = $('wCover').files[0];
+      if (f) { if (!window.kirinImageValid(f)) throw new Error('الغلاف: JPG أو PNG أو WebP أو AVIF حتى 15MB.'); const p = `cover-${Date.now()}.${ext(f)}`; const u = await db.storage.from('covers').upload(p, f, { contentType: f.type }); if (u.error) throw u.error; cover = p; }
+      const title = $('wTitle').value.trim();
+      const row = { title, slug: $('wSlug').value.trim() || window.slugify(title) || 'work-' + Date.now(), alt_title: $('wAlt').value.trim() || null, author: $('wAuthor').value.trim() || null, artist: $('wArtist').value.trim() || null, release_year: Number($('wYear').value) || null, work_type: $('wType').value, status: $('wStatus').value, genres: $('wGenres').value.split(/[،,]/).map(s => s.trim()).filter(Boolean), description: $('wDesc').value.trim() || null, cover_path: cover, updated_at: new Date().toISOString() };
+      const r = W ? await db.from('works').update(row).eq('id', W.id) : await db.from('works').insert(row);
+      if (r.error) throw r.error; $('wCover').value = ''; toast('تم حفظ العمل'); await load();
+    } catch (x) { toast(msg(x), 1); }
+    b.disabled = false;
+  };
+
+  async function loadChapters() {
+    if (!W) { chapters = []; return renderCh(); }
+    const q = await db.from('chapters').select('*').or(`work_id.eq.${W.id},work_id.is.null`).order('chapter_number', { ascending: false });
+    if (q.error) return toast(msg(q.error), 1); chapters = q.data || []; renderCh();
+  }
+  function renderCh() {
+    const orph = chapters.filter(c => !c.work_id); vis('orphans', orph.length > 0); $('orphanText').textContent = `${orph.length} فصل غير مربوط بأي عمل (فصول قديمة)، لذلك لا تظهر للزوار.`;
+    const pub = chapters.filter(c => c.status === 'published').length;
+    $('stPub').textContent = pub; $('stDraft').textContent = chapters.length - pub; $('stPages').textContent = chapters.reduce((s, c) => s + (c.page_count || 0), 0);
+    $('stViews').textContent = chapters.some(c => c.views != null) ? chapters.reduce((s, c) => s + (Number(c.views) || 0), 0) : '—';
+    $('chList').innerHTML = chapters.map(c => `<div class="row" data-id="${c.id}"><span class="n mono">${esc(c.chapter_number)}</span><span>${esc(c.title || 'الفصل ' + c.chapter_number)}<span class="badge ${c.status === 'published' ? 'on' : ''}">${c.status === 'published' ? 'منشور' : 'مسودة'}</span><span class="badge">${c.page_count || 0} صفحة</span>${c.work_id ? '' : '<span class="badge">غير مربوط</span>'}</span><div class="acts"><button class="btn" data-act="toggle">${c.status === 'published' ? 'إخفاء' : 'نشر'}</button><button class="btn" data-act="edit">تعديل</button><button class="btn danger" data-act="del">حذف</button></div></div>`).join('') || '<p class="muted">لا توجد فصول بعد.</p>';
+  }
+  $('linkOrphans').onclick = async () => { if (!W) return toast('احفظ العمل أولاً', 1); const r = await db.from('chapters').update({ work_id: W.id }).is('work_id', null); if (r.error) return toast(msg(r.error), 1); toast('تم ربط الفصول'); await loadChapters(); };
+  function resetCh() { editing = null; $('chapterForm').reset(); $('cHead').textContent = 'فصل جديد'; $('cMsg').textContent = ''; }
+  $('cReset').onclick = resetCh;
+  $('chList').onclick = async e => {
+    const b = e.target.closest('[data-act]'); if (!b) return; const id = b.closest('.row').dataset.id, c = chapters.find(x => x.id === id); if (!c) return;
+    try {
+      if (b.dataset.act === 'edit') { editing = c; $('cNumber').value = c.chapter_number; $('cTitle').value = c.title || ''; $('cStatus').value = c.status || 'draft'; $('cFiles').value = ''; $('cHead').textContent = 'تعديل الفصل ' + c.chapter_number; $('chapterForm').scrollIntoView({ behavior: 'smooth' }); }
+      if (b.dataset.act === 'toggle') { const pub = c.status !== 'published'; const r = await db.from('chapters').update({ status: pub ? 'published' : 'draft', published: pub, published_at: pub ? (c.published_at || new Date().toISOString()) : null }).eq('id', id); if (r.error) throw r.error; await loadChapters(); }
+      if (b.dataset.act === 'del') {
+        if (!confirm(`حذف الفصل ${c.chapter_number} وكل صفحاته نهائياً؟`)) return;
+        const pg = await db.from('chapter_pages').select('storage_path').eq('chapter_id', id); if (pg.error) throw pg.error;
+        if ((pg.data || []).length) { const rm = await db.storage.from('chapter-pages').remove(pg.data.map(p => p.storage_path)); if (rm.error) throw rm.error; }
+        const d1 = await db.from('chapter_pages').delete().eq('chapter_id', id); if (d1.error) throw d1.error;
+        const d2 = await db.from('chapters').delete().eq('id', id); if (d2.error) throw d2.error; toast('تم حذف الفصل'); if (editing && editing.id === id) resetCh(); await loadChapters();
+      }
+    } catch (x) { toast(msg(x), 1); }
+  };
+  $('chapterForm').onsubmit = async e => {
+    e.preventDefault(); if (!W) return toast('احفظ العمل أولاً', 1); const b = e.submitter; b.disabled = true; const up = [];
+    try {
+      const files = [...$('cFiles').files].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      for (const f of files) if (!window.kirinImageValid(f)) throw new Error('ملف غير صالح (النوع أو الحجم): ' + f.name);
+      const st = $('cStatus').value, num = Number($('cNumber').value); if (!(num >= 0)) throw new Error('رقم الفصل مطلوب.');
+      const row = { work_id: W.id, title: $('cTitle').value.trim() || null, chapter_number: num, status: st, published: st === 'published', published_at: st === 'published' ? ((editing && editing.published_at) || new Date().toISOString()) : null };
+      let id = editing && editing.id;
+      if (id) { const r = await db.from('chapters').update(row).eq('id', id); if (r.error) throw r.error; } else { const r = await db.from('chapters').insert(row).select('id').single(); if (r.error) throw r.error; id = r.data.id; }
+      if (files.length) {
+        const recs = [];
+        for (const [i, f] of files.entries()) { $('cMsg').textContent = `${i + 1} / ${files.length}`; const p = `${id}/${String(i + 1).padStart(3, '0')}-${Date.now()}.${ext(f)}`; const u = await db.storage.from('chapter-pages').upload(p, f, { contentType: f.type }); if (u.error) throw u.error; up.push(p); recs.push({ chapter_id: id, page_number: i + 1, storage_path: p }); }
+        const old = (await db.from('chapter_pages').select('page_number,storage_path').eq('chapter_id', id)).data || [];
+        if (old.length) { const d = await db.from('chapter_pages').delete().eq('chapter_id', id); if (d.error) throw d.error; }
+        const ins = await db.from('chapter_pages').insert(recs);
+        if (ins.error) { if (old.length) await db.from('chapter_pages').insert(old.map(x => ({ chapter_id: id, ...x }))); throw ins.error; }
+        up.length = 0; if (old.length) await db.storage.from('chapter-pages').remove(old.map(x => x.storage_path));
+        await db.from('chapters').update({ page_count: files.length }).eq('id', id);
+      }
+      toast('تم حفظ الفصل'); resetCh(); await loadChapters();
+    } catch (x) { if (up.length) await db.storage.from('chapter-pages').remove(up); toast(msg(x), 1); }
+    b.disabled = false;
+  };
+  db.auth.onAuthStateChange(() => {}); await gate();
 })();

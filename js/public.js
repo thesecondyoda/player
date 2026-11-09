@@ -13,8 +13,8 @@
     $('workTitle').textContent = w.title;
     if (w.alt_title) { $('workAlt').hidden = false; $('workAlt').textContent = w.alt_title; }
     $('workDesc').textContent = w.description || '';
-    $('workTags').innerHTML = (w.genres || []).map(g => `<span class="tag">${esc(g)}</span>`).join('');
-    if (cover) { $('heroCover').innerHTML = `<img src="${esc(cover)}" alt="غلاف ${esc(w.title)}">`; $('hero').style.setProperty('--cover', `url("${cover}")`); }
+    $('workTags').innerHTML = (w.genres || []).flatMap(g => String(g).split(/[،,]/)).map(g => g.trim()).filter(Boolean).map(g => `<span class="tag">${esc(g)}</span>`).join('');
+    if (cover) { $('heroCover').innerHTML = `<img src="${esc(cover)}" alt="غلاف ${esc(w.title)}">`; document.body.style.setProperty('--cover', `url("${cover}")`); }
     const about = [['المؤلف', w.author], ['الرسام', w.artist], ['سنة الإصدار', w.release_year], ['النوع', ({ Manga: 'مانغا', Manhwa: 'مانهوا', Manhua: 'مانها', Comic: 'كوميك', Novel: 'رواية' })[w.work_type] || w.work_type]].filter(x => x[1]);
     if (about.length) { $('about').hidden = false; $('about').innerHTML = about.map(([k, v]) => `<div><b>${k}</b>${esc(v)}</div>`).join(''); }
     let res = await db.from('chapters').select('id,title,chapter_number,published_at,views').eq('work_id', w.id).eq('status', 'published');
