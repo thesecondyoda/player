@@ -5,6 +5,12 @@
   const vis = (id, on) => { $(id).hidden = !on; };
   if (!db) { document.querySelector('main').innerHTML = '<p class="empty-state">اتصال Supabase غير مضبوط في js/config.js.</p>'; return; }
   let W = null, chapters = [], editing = null;
+  async function toWebp(f) {
+    if (f.type === 'image/webp' || f.type === 'image/avif') return f;
+    try { const bm = await createImageBitmap(f), c = document.createElement('canvas'); c.width = bm.width; c.height = bm.height; c.getContext('2d').drawImage(bm, 0, 0); if (bm.close) bm.close();
+      const b = await new Promise(r => c.toBlob(r, 'image/webp', 1)); if (!b || b.type !== 'image/webp' || b.size >= f.size) return f;
+      return new File([b], f.name.replace(/\.[^.]+$/, '') + '.webp', { type: 'image/webp' }); } catch (e) { return f; }
+  }
   const ext = f => (f.name.split('.').pop() || 'jpg').toLowerCase();
   const genres = w => (w.genres || []).flatMap(g => String(g).split(/[،,]/)).map(s => s.trim()).filter(Boolean);
 
@@ -76,6 +82,8 @@
     try {
       const files = [...$('cFiles').files].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
       for (const f of files) if (!window.kirinImageValid(f)) throw new Error('ملف غير صالح (النوع أو الحجم): ' + f.name);
+      let info = '';
+      if ($('cWebp').checked) { let k = 0, a = 0, z = 0; for (const [i, f] of files.entries()) { $('cMsg').textContent = `تحويل ${i + 1} / ${files.length}`; const o = await toWebp(f); if (o !== f) k++; a += f.size; z += o.size; files[i] = o; } info = ` — WebP: ${k} من ${files.length} صفحة${a > z ? '، وُفّر ' + Math.round((1 - z / a) * 100) + '%' : ''}`; }
       const st = $('cStatus').value, num = Number($('cNumber').value); if (!(num >= 0)) throw new Error('رقم الفصل مطلوب.');
       const row = { work_id: W.id, title: $('cTitle').value.trim() || null, chapter_number: num, status: st, published: st === 'published', published_at: st === 'published' ? ((editing && editing.published_at) || new Date().toISOString()) : null };
       let id = editing && editing.id;
@@ -90,7 +98,7 @@
         up.length = 0; if (old.length) await db.storage.from('chapter-pages').remove(old.map(x => x.storage_path));
         await db.from('chapters').update({ page_count: files.length }).eq('id', id);
       }
-      toast('تم حفظ الفصل'); resetCh(); await loadChapters();
+      toast('تم حفظ الفصل' + info); resetCh(); await loadChapters();
     } catch (x) { if (up.length) await db.storage.from('chapter-pages').remove(up); toast(msg(x), 1); }
     b.disabled = false;
   };
