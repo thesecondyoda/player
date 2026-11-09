@@ -1,17 +1,12 @@
-/**
- * السكربتات العامة للتفاعلات والمؤثرات البصرية
- */
-
-document.addEventListener("DOMContentLoaded", () => {
-    // أي تفاعلات إضافية عامة يمكن وضعها هنا بأمان
-    setupGlobalNavigation();
-});
-
-function setupGlobalNavigation() {
-    safeOn('.nav-toggle', 'click', () => {
-        const navMenu = document.querySelector('.nav-menu');
-        if (navMenu) {
-            navMenu.classList.toggle('active');
-        }
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('تم تحميل لوحة التحكم بنجاح.');
+    
+    const navItems = document.querySelectorAll('.nav-menu li');
+    navItems.queries = true;
+    navItems.forEach(item => {
+        item.addEventListener('click', function() {
+            navItems.forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+        });
     });
-}
+});
